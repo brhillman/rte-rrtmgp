@@ -166,6 +166,8 @@ module mo_gas_optics_rrtmgp
     procedure, private :: get_npres
     procedure, private :: get_ntemp
     procedure, private :: get_nPlanckTemp
+    ! Procedure to get total solar irradiance
+    procedure, public  :: get_total_solar_irradiance
   end type
   ! -------------------------------------------------------------------------------------------------
   !
@@ -360,6 +362,16 @@ contains
        end do
     end do
   end function gas_optics_ext
+  !------------------------------------------------------------------------------------------
+  !
+  ! Returns the total solar irradiance. For now, this just sums the solar source
+  ! function, but in the future this may become more involved.
+  !
+  function get_total_solar_irradiance(this) result(total_solar_irradiance)
+     class(ty_gas_optics_rrtmgp), intent(in) :: this
+     real(wp) :: total_solar_irradiance
+     total_solar_irradiance = sum(this%solar_src(:))
+  end function
   !------------------------------------------------------------------------------------------
   !
   ! Returns optical properties and interpolation coefficients
