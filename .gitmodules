@@ -1,0 +1,3 @@
+[submodule "examples/rte-rrtmgp-clouds"]
+	path = examples/rte-rrtmgp-clouds
+	url = git@github.com:brhillman/rte-rrtmgp-clouds
