@@ -12,6 +12,15 @@ endif
 RTE_KERNEL_DIR += ../rte/kernels
 RRTMGP_KERNEL_DIR += ../rrtmgp/kernels
 VPATH = $(RTE_DIR):$(RTE_KERNEL_DIR):$(RRTMGP_DIR):$(RRTMGP_KERNEL_DIR)
+
+#
+# Build with GPTL timing if GPTL_ROOT is set
+#
+ifdef GPTL_ROOT
+    FCFLAGS += -DUSE_TIMING -I$(GPTL_ROOT)/include
+    LDFLAGS += -L$(GPTL_ROOT)/lib -lgptl -lgptl
+endif
+
 #
 # Compiler variables FC, FCFLAGS can be set in the environment or in Makefile.conf
 #
