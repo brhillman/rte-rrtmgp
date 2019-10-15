@@ -497,33 +497,9 @@ contains
       !
       select type(optical_props)
       type is (ty_optical_props_1scl)
-        !$acc parallel loop gang vector default(none) collapse(3) &
-        !$acc               copyin(optical_props) copyout(optical_props%tau)
-
-        do ibnd = 1, nbnd
-          do ilay = 1, nlay
-            do icol = 1,ncol
-              ! Absorption optical depth  = (1-ssa) * tau = tau - taussa
-              optical_props%tau(icol,ilay,ibnd) = (ltau(icol,ilay,ibnd) - ltaussa(icol,ilay,ibnd)) + &
-                                                  (itau(icol,ilay,ibnd) - itaussa(icol,ilay,ibnd))
-            end do
-          end do
-        end do
+        call cloud_optics_1scl(ltau,ltaussa,itau,itaussa,optical_props%tau)
       type is (ty_optical_props_2str)
-        !$acc parallel loop gang vector default(none) collapse(3) &
-        !$acc               copyin(optical_props) copyout(optical_props%tau, optical_props%ssa, optical_props%g)
-        do ibnd = 1, nbnd
-          do ilay = 1, nlay
-            do icol = 1,ncol
-              tau    = ltau   (icol,ilay,ibnd) + itau   (icol,ilay,ibnd)
-              taussa = ltaussa(icol,ilay,ibnd) + itaussa(icol,ilay,ibnd)
-              optical_props%g  (icol,ilay,ibnd) = (ltaussag(icol,ilay,ibnd) + itaussag(icol,ilay,ibnd)) / &
-                                                        max(epsilon(tau), taussa)
-              optical_props%ssa(icol,ilay,ibnd) = taussa/max(epsilon(tau), tau)
-              optical_props%tau(icol,ilay,ibnd) = tau
-            end do
-          end do
-        end do
+        call cloud_optics_2str(ltau,ltaussa,itau,itaussa,ltaussag,itaussag,optical_props%tau,optical_props%ssa,optical_props%g)
       type is (ty_optical_props_nstr)
         error_msg = "cloud optics: n-stream calculations not yet supported"
       end select
@@ -531,6 +507,57 @@ contains
     end if ! error_msg == ""
     !$acc end data
   end function cloud_optics
+  subroutine cloud_optics_1scl(ltau,ltaussa,itau,itaussa,op_tau)
+    real(wp), intent(in   ) :: ltau   (:,:,:)
+    real(wp), intent(in   ) :: ltaussa(:,:,:)
+    real(wp), intent(in   ) :: itau   (:,:,:)
+    real(wp), intent(in   ) :: itaussa(:,:,:)
+    real(wp), intent(  out) :: op_tau (:,:,:)
+    integer :: nbnd,nlay,ncol,ibnd,ilay,icol
+    ncol = size(ltau,1)
+    nlay = size(ltau,2)
+    nbnd = size(ltau,3)
+    !$acc parallel loop gang vector collapse(3)
+    do ibnd = 1, nbnd
+      do ilay = 1, nlay
+        do icol = 1,ncol
+          ! Absorption optical depth  = (1-ssa) * tau = tau - taussa
+          op_tau(icol,ilay,ibnd) = (ltau(icol,ilay,ibnd) - ltaussa(icol,ilay,ibnd)) + &
+                                   (itau(icol,ilay,ibnd) - itaussa(icol,ilay,ibnd))
+        end do
+      end do
+    end do
+  end subroutine cloud_optics_1scl
+  subroutine cloud_optics_2str(ltau,ltaussa,itau,itaussa,ltaussag,itaussag,op_tau,op_ssa,op_g)
+    real(wp), intent(in   ) :: ltau    (:,:,:)
+    real(wp), intent(in   ) :: ltaussa (:,:,:)
+    real(wp), intent(in   ) :: itau    (:,:,:)
+    real(wp), intent(in   ) :: itaussa (:,:,:)
+    real(wp), intent(in   ) :: ltaussag(:,:,:)
+    real(wp), intent(in   ) :: itaussag(:,:,:)
+    real(wp), intent(  out) :: op_tau  (:,:,:)
+    real(wp), intent(  out) :: op_ssa  (:,:,:)
+    real(wp), intent(  out) :: op_g    (:,:,:)
+    real(wp) :: tau, taussa
+    integer :: nbnd,nlay,ncol,ibnd,ilay,icol
+    ncol = size(ltau,1)
+    nlay = size(ltau,2)
+    nbnd = size(ltau,3)
+    !$acc parallel loop gang vector collapse(3)
+    do ibnd = 1, nbnd
+      do ilay = 1, nlay
+        do icol = 1,ncol
+          tau    = ltau   (icol,ilay,ibnd) + itau   (icol,ilay,ibnd)
+          taussa = ltaussa(icol,ilay,ibnd) + itaussa(icol,ilay,ibnd)
+          op_g  (icol,ilay,ibnd) = (ltaussag(icol,ilay,ibnd) + itaussag(icol,ilay,ibnd)) / &
+                                                    max(epsilon(tau), taussa)
+          op_ssa(icol,ilay,ibnd) = taussa/max(epsilon(tau), tau)
+          op_tau(icol,ilay,ibnd) = tau
+        end do
+      end do
+    end do
+  end subroutine cloud_optics_2str
+
   !--------------------------------------------------------------------------------------------------------------------
   !
   ! Inquiry functions
