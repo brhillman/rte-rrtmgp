@@ -353,13 +353,21 @@ contains
     !
     error_msg = check_extent(toa_src,     ncol,         ngpt, 'toa_src')
     if(error_msg  /= '') return
+    call gas_optics_ext_kernel(this%solar_src,toa_src)
+  end function gas_optics_ext
+  subroutine gas_optics_ext_kernel(solar_src,toa_src)
+    real(wp), intent(in   ) :: solar_src(:)
+    real(wp), intent(  out) :: toa_src  (:,:)
+    integer :: igpt,icol,ngpt,ncol
+    ncol = size(toa_src,1)
+    ngpt = size(toa_src,2)
     !$acc parallel loop collapse(2)
     do igpt = 1,ngpt
        do icol = 1,ncol
-          toa_src(icol,igpt) = this%solar_src(igpt)
+          toa_src(icol,igpt) = solar_src(igpt)
        end do
     end do
-  end function gas_optics_ext
+  end subroutine gas_optics_ext_kernel
   !------------------------------------------------------------------------------------------
   !
   ! Returns optical properties and interpolation coefficients
@@ -656,12 +664,7 @@ contains
                 this%get_gpoint_bands(), this%get_band_lims_gpoint(), this%planck_frac, this%temp_ref_min,&
                 this%totplnk_delta, this%totplnk, this%gpoint_flavor,  &
                 sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t)
-    !$acc parallel loop collapse(2)
-    do igpt = 1, ngpt
-      do icol = 1, ncol
-        sources%sfc_source(icol,igpt) = sfc_source_t(igpt,icol)
-      end do
-    end do
+    call source_kernel(sources%sfc_source,sfc_source_t)
     call reorder123x321(lay_source_t, sources%lay_source)
     call reorder123x321(lev_source_inc_t, sources%lev_source_inc)
     call reorder123x321(lev_source_dec_t, sources%lev_source_dec)
@@ -669,6 +672,19 @@ contains
     !$acc exit data copyout(sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, sources%sfc_source)
     !$acc exit data copyout(sources)
   end function source
+  subroutine source_kernel(sources_sfc_source,sfc_source_t)
+    real(wp), intent(in   ) :: sfc_source_t      (:,:)
+    real(wp), intent(  out) :: sources_sfc_source(:,:)
+    integer :: igpt, icol, ngpt, ncol
+    ncol = size(sfc_source_t,2)
+    ngpt = size(sfc_source_t,1)
+    !$acc parallel loop collapse(2)
+    do igpt = 1, ngpt
+      do icol = 1, ncol
+        sources_sfc_source(icol,igpt) = sfc_source_t(igpt,icol)
+      end do
+    end do
+  end subroutine source_kernel
   !--------------------------------------------------------------------------------------------------------------------
   !
   ! Initialization
