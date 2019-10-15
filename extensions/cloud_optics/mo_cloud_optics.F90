@@ -161,9 +161,6 @@ contains
     this%lut_ssaice = lut_ssaice
     this%lut_asyice = lut_asyice
     
-    !$acc enter data copyin(this)                                               &
-    !$acc            copyin(this%lut_extliq, this%lut_ssaliq, this%lut_asyliq)  &
-    !$acc            copyin(this%lut_extice, this%lut_ssaice, this%lut_asyice)
     !
     ! Set default ice roughness - min values
     !
@@ -289,12 +286,6 @@ contains
     this%pade_sizreg_ssaice = pade_sizreg_ssaice
     this%pade_sizreg_asyice = pade_sizreg_asyice
 
-    !$acc enter data copyin(this)                                                                       &
-    !$acc            copyin(this%pade_extliq, this%pade_ssaliq, this%pade_asyliq)                       &
-    !$acc            copyin(this%pade_extice, this%pade_ssaice, this%pade_asyice)                       &
-    !$acc            copyin(this%pade_sizreg_extliq, this%pade_sizreg_ssaliq, this%pade_sizreg_asyliq)  &
-    !$acc            copyin(this%pade_sizreg_extice, this%pade_sizreg_ssaice, this%pade_sizreg_asyice)
-
     !
     ! Set default ice roughness - min values
     !
@@ -315,12 +306,6 @@ contains
 
     ! Lookup table cloud optics coefficients
     if(allocated(this%lut_extliq)) then
-
-      !$acc exit data delete(this%lut_extliq, this%lut_ssaliq, this%lut_asyliq)  &
-      !$acc           delete(this%lut_extice, this%lut_ssaice, this%lut_asyice)  &
-      !$acc           delete(this)
-
-
       deallocate(this%lut_extliq, this%lut_ssaliq, this%lut_asyliq, &
                  this%lut_extice, this%lut_ssaice, this%lut_asyice)
       this%liq_nsteps = 0
@@ -331,13 +316,6 @@ contains
 
     ! Pade cloud optics coefficients
     if(allocated(this%pade_extliq)) then
-
-      !$acc exit data delete(this%pade_extliq, this%pade_ssaliq, this%pade_asyliq)                       &
-      !$acc           delete(this%pade_extice, this%pade_ssaice, this%pade_asyice)                       &
-      !$acc           delete(this%pade_sizreg_extliq, this%pade_sizreg_ssaliq, this%pade_sizreg_asyliq)  &
-      !$acc           delete(this%pade_sizreg_extice, this%pade_sizreg_ssaice, this%pade_sizreg_asyice)  &
-      !$acc           delete(this)
-
       deallocate(this%pade_extliq, this%pade_ssaliq, this%pade_asyliq, &
                  this%pade_extice, this%pade_ssaice, this%pade_asyice, &
                  this%pade_sizreg_extliq, this%pade_sizreg_ssaliq, this%pade_sizreg_asyliq, &

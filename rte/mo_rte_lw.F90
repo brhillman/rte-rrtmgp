@@ -175,8 +175,6 @@ contains
     !
     allocate(gpt_flux_up (ncol, nlay+1, ngpt), gpt_flux_dn(ncol, nlay+1, ngpt))
     allocate(sfc_emis_gpt(ncol,         ngpt))
-    !!$acc enter data copyin(sources, sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, sources%sfc_source)
-    !$acc enter data copyin(optical_props)
     !$acc enter data create(gpt_flux_dn, gpt_flux_up)
     !$acc enter data create(sfc_emis_gpt)
     call expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt)
@@ -202,7 +200,6 @@ contains
         !
         ! No scattering two-stream calculation
         !
-        !$acc enter data copyin(optical_props%tau)
         error_msg =  optical_props%validate()
         if(len_trim(error_msg) > 0) return
         call lw_solver_noscat_GaussQuad(ncol, nlay, ngpt, logical(top_at_1, wl), &
@@ -211,12 +208,10 @@ contains
                               sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, &
                               sfc_emis_gpt, sources%sfc_source,  &
                               gpt_flux_up, gpt_flux_dn)
-        !$acc exit data delete(optical_props%tau)
       class is (ty_optical_props_2str)
         !
         ! two-stream calculation with scattering
         !
-        !$acc enter data copyin(optical_props%tau, optical_props%ssa, optical_props%g)
         error_msg =  optical_props%validate()
         if(len_trim(error_msg) > 0) return
         call lw_solver_2stream(ncol, nlay, ngpt, logical(top_at_1, wl), &
@@ -224,7 +219,6 @@ contains
                                sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, &
                                sfc_emis_gpt, sources%sfc_source,       &
                                gpt_flux_up, gpt_flux_dn)
-        !$acc exit data delete(optical_props%tau, optical_props%ssa, optical_props%g)
       class is (ty_optical_props_nstr)
         !
         ! n-stream calculation
@@ -239,8 +233,6 @@ contains
     error_msg = fluxes%reduce(gpt_flux_up, gpt_flux_dn, optical_props, top_at_1)
     !$acc exit data delete(sfc_emis_gpt)
     !$acc exit data delete(gpt_flux_up,gpt_flux_dn)
-    !$acc exit data delete(optical_props)
-    !!$acc exit data delete(sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, sources%sfc_source,sources)
   end function rte_lw
   !--------------------------------------------------------------------------------------------------------------------
   !

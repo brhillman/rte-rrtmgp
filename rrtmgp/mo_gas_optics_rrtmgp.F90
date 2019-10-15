@@ -509,8 +509,6 @@ contains
     !$acc enter data create(tau, tau_rayleigh)
     !$acc enter data create(col_mix, fminor)
     !$acc enter data copyin(play, tlay, col_gas)
-    !$acc enter data copyin(this)
-    !$acc enter data copyin(this%gpoint_flavor)
     call zero_array(ngpt, nlay, ncol, tau)
     call interpolation(               &
             ncol,nlay,                &        ! problem dimensions
@@ -560,7 +558,7 @@ contains
             jeta,jtemp,jpress,                       &
             tau)
     if (allocated(this%krayl)) then
-      !$acc enter data attach(col_dry_wk) copyin(this%krayl)
+      !$acc enter data attach(col_dry_wk)
       call compute_tau_rayleigh(         & !Rayleigh scattering optical depths
             ncol,nlay,nband,ngpt,        &
             ngas,nflav,neta,npres,ntemp, & ! dimensions
@@ -570,7 +568,7 @@ contains
             idx_h2o, col_dry_wk,col_gas, &
             fminor,jeta,tropo,jtemp,     & ! local input
             tau_rayleigh)
-      !$acc exit data detach(col_dry_wk) delete(this%krayl)
+      !$acc exit data detach(col_dry_wk)
     end if
     if (error_msg /= '') return
 
@@ -579,7 +577,6 @@ contains
     !$acc exit data delete(tau, tau_rayleigh)
     !$acc exit data delete(play, tlay, col_gas)
     !$acc exit data delete(col_mix, fminor)
-    !$acc exit data delete(this%gpoint_flavor)
     !$acc exit data copyout(jtemp, jpress, jeta, tropo, fmajor)
   end function compute_gas_taus
   !------------------------------------------------------------------------------------------
@@ -654,8 +651,6 @@ contains
     !-------------------------------------------------------------------
     ! Compute internal (Planck) source functions at layers and levels,
     !  which depend on mapping from spectral space that creates k-distribution.
-    !$acc enter data copyin(sources)
-    !$acc enter data create(sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, sources%sfc_source)
     !$acc enter data create(sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t) attach(tlev_wk)
     call compute_Planck_source(ncol, nlay, nbnd, ngpt, &
                 get_nflav(this), this%get_neta(), this%get_npres(), this%get_ntemp(), this%get_nPlanckTemp(), &
@@ -669,8 +664,6 @@ contains
     call reorder123x321(lev_source_inc_t, sources%lev_source_inc)
     call reorder123x321(lev_source_dec_t, sources%lev_source_dec)
     !$acc exit data delete(sfc_source_t, lay_source_t, lev_source_inc_t, lev_source_dec_t) detach(tlev_wk)
-    !$acc exit data copyout(sources%lay_source, sources%lev_source_inc, sources%lev_source_dec, sources%sfc_source)
-    !$acc exit data copyout(sources)
   end function source
   subroutine source_kernel(sources_sfc_source,sfc_source_t)
     real(wp), intent(in   ) :: sfc_source_t      (:,:)
@@ -1564,26 +1557,19 @@ contains
     ncol = size(tau, 3)
     nlay = size(tau, 2)
     ngpt = size(tau, 1)
-    !$acc enter data copyin(optical_props)
     if (.not. has_rayleigh) then
       ! index reorder (ngpt, nlay, ncol) -> (ncol,nlay,gpt)
       !$acc enter data copyin(tau)
-      !$acc enter data create(optical_props%tau)
       call reorder123x321(tau, optical_props%tau)
       select type(optical_props)
         type is (ty_optical_props_2str)
-          !$acc enter data create(optical_props%ssa, optical_props%g)
           call zero_array(     ncol,nlay,ngpt,optical_props%ssa)
           call zero_array(     ncol,nlay,ngpt,optical_props%g  )
-          !$acc exit data copyout(optical_props%ssa, optical_props%g)
         type is (ty_optical_props_nstr) ! We ought to be able to combine this with above
           nmom = size(optical_props%p, 1)
-          !$acc enter data create(optical_props%ssa, optical_props%p)
           call zero_array(     ncol,nlay,ngpt,optical_props%ssa)
           call zero_array(nmom,ncol,nlay,ngpt,optical_props%p  )
-          !$acc exit data copyout(optical_props%ssa, optical_props%p)
         end select
-      !$acc exit data copyout(optical_props%tau)
       !$acc exit data delete(tau)
     else
       ! combine optical depth and rayleigh scattering
@@ -1591,24 +1577,17 @@ contains
       select type(optical_props)
         type is (ty_optical_props_1scl)
           ! User is asking for absorption optical depth
-          !$acc enter data create(optical_props%tau)
           call reorder123x321(tau, optical_props%tau)
-          !$acc exit data copyout(optical_props%tau)
         type is (ty_optical_props_2str)
-          !$acc enter data create(optical_props%tau, optical_props%ssa, optical_props%g)
           call combine_and_reorder_2str(ncol, nlay, ngpt,       tau, tau_rayleigh, &
                                         optical_props%tau, optical_props%ssa, optical_props%g)
-          !$acc exit data copyout(optical_props%tau, optical_props%ssa, optical_props%g)
         type is (ty_optical_props_nstr) ! We ought to be able to combine this with above
           nmom = size(optical_props%p, 1)
-          !$acc enter data create(optical_props%tau, optical_props%ssa, optical_props%p)
           call combine_and_reorder_nstr(ncol, nlay, ngpt, nmom, tau, tau_rayleigh, &
                                         optical_props%tau, optical_props%ssa, optical_props%p)
-          !$acc exit data copyout(optical_props%tau, optical_props%ssa, optical_props%p)
       end select
       !$acc exit data delete(tau, tau_rayleigh)
     end if
-    !$acc exit data copyout(optical_props)
   end subroutine combine_and_reorder
 
   !--------------------------------------------------------------------------------------------------------------------

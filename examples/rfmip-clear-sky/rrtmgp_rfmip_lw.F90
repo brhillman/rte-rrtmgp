@@ -226,8 +226,6 @@ program rrtmgp_rfmip_lw
   ! bug related to the use of Fortran classes on the GPU.
   !
   !$acc enter data create(sfc_emis_spec)
-  !$acc enter data create(optical_props, optical_props%tau)
-  !$acc enter data create(source, source%lay_source, source%lev_source_inc, source%lev_source_dec, source%sfc_source)
   ! --------------------------------------------------
 #ifdef USE_TIMING
   !
@@ -299,9 +297,6 @@ program rrtmgp_rfmip_lw
   ret = gptlfinalize()
 #endif
   !$acc exit data delete(sfc_emis_spec)
-  !$acc exit data delete(optical_props%tau, optical_props)
-  !$acc exit data delete(source%lay_source, source%lev_source_inc, source%lev_source_dec, source%sfc_source)
-  !$acc exit data delete(source)
   ! --------------------------------------------------m
   call unblock_and_write(trim(flxup_file), 'rlu', flux_up)
   call unblock_and_write(trim(flxdn_file), 'rld', flux_dn)

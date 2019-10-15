@@ -228,7 +228,6 @@ program rrtmgp_rfmip_sw
            flux_dn(block_size, nlay+1, nblocks))
   allocate(mu0(block_size), sfc_alb_spec(nbnd,block_size))
   call stop_on_err(optical_props%alloc_2str(block_size, nlay, k_dist))
-  !$acc enter data create(optical_props, optical_props%tau, optical_props%ssa, optical_props%g)
   !$acc enter data create (toa_flux, def_tsi)
   !$acc enter data create (sfc_alb_spec, mu0)
   ! --------------------------------------------------
@@ -345,7 +344,6 @@ program rrtmgp_rfmip_sw
   ret = gptlpr(block_size)
   ret = gptlfinalize()
 #endif
-  !$acc exit data delete(optical_props%tau, optical_props%ssa, optical_props%g, optical_props)
   !$acc exit data delete(sfc_alb_spec, mu0)
   !$acc exit data delete(toa_flux, def_tsi)
   ! --------------------------------------------------
