@@ -655,7 +655,7 @@ contains
     real(wp) :: fint
     real(wp) :: t, ts, tsg  ! tau, tau*ssa, tau*ssa*g
     ! ---------------------------
-    !$acc parallel loop gang vector default(present) collapse(3)
+    !$acc parallel loop gang vector collapse(3)
     do ibnd = 1, nbnd
       do ilay = 1,nlay
         do icol = 1, ncol
@@ -742,7 +742,7 @@ contains
     integer  :: icol, ilay, ibnd, irad, count
     real(wp) :: t, ts
 
-    !$acc parallel loop gang vector default(present) collapse(3)
+    !$acc parallel loop gang vector collapse(3)
     do ibnd = 1, nbnd
       do ilay = 1, nlay
         do icol = 1, ncol
