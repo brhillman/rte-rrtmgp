@@ -8,7 +8,11 @@ RTE_SRC = \
   mo_fluxes.o \
   mo_rte_solver_kernels.o \
   mo_rte_lw.o \
-  mo_rte_sw.o
+  mo_rte_sw.o \
+  mo_timing.o
+
+# Everyone needs mo_timing
+%.o: mo_timing.o
 
 ##################################
 # RTE - Radiative transfer for energetics
